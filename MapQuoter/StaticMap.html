@@ -1,0 +1,204 @@
+<head>
+	<script src="https://unpkg.com/konva@4.1.6/konva.min.js"></script>
+	 <script src="https://unpkg.com/jspdf@latest/dist/jspdf.min.js"></script>
+<style>
+#map {
+}
+</style>
+<FORM NAME="map" type = "text">
+<INPUT TYPE="hidden" NAME="details">
+</FORM>
+<body>
+	<div id = "container"></div>
+	<div id = "buttons">
+		<button id = "save">Download Quoted Brocher</button> 
+    <button id = "saveJPEG">Download Quoted Area as a JPEG</button>
+	</div>
+</body>
+<script>
+	var locate = window.location;
+	document.map.details.value = locate;
+
+	var eq = [];
+	var and = [];
+	var text = document.map.details.value;
+	for(var i = 0; i<text.length; i++){
+		if(text.charAt(i)=="="){
+			eq.push(i);
+			
+		};
+		if(text.charAt(i)=="&"){
+			and.push(i);
+		};
+	}
+//firstname
+
+	function delineate(str)
+	{
+		theleft = eq[0] + 1;
+		theright = and[0];
+		return(str.substring(theleft, theright));
+	}
+	document.write("Center latitude is " +delineate(text)+ "<br>");
+	var lat = delineate(text);
+//lastname
+
+	function delineate1(str)
+	{
+		point = eq[1]+1;
+		yEnd = and[1];
+		return(str.substring(point,yEnd));
+	}
+	document.write(" Center longitude is " +delineate1(text)+ "<br>");
+	var lng = delineate1(text);
+/*
+	function delineate2(str)
+	{
+		initial = eq[2]+1;
+		final = and[2];
+		return(str.substring(initial,final));
+
+	}
+	document.write("Address is " +delineate2(text)+ "<br>");
+	var addr = delineate2(text);*/
+//edge Length
+
+	function delineate3(str)
+	{
+		start = eq[2]+1;
+		return(str.substring(start,str.length)); 
+	}
+	var edge = delineate3(text);
+	document.write(" Selected square size is " +edge+"x"+edge+ "m <br>");
+	var eLength = delineate3(text);
+//zoom level
+	var adjust;
+	if(eLength==500){
+		adjust=17;
+	};
+	if(eLength==250){
+		adjust=18;
+	};
+//stage and map size
+	var sWidth = 1000;
+	var sHeight = 1000;
+  var mWidth = 4000;
+  var mHeight = 4000;
+
+//Konva margin overlay
+  //coordinates of rectangle relative to map image
+      var xRectAdj = 45;
+      var yRectAdj = 50;
+  //coordinates of map and rectangle relative to the stage
+      var xCoord = 100;
+      var yCoord = 200;
+      var stage = new Konva.Stage({
+        container: 'container',
+        width: sWidth,
+        height: sHeight
+      });
+
+      var layer = new Konva.Layer();
+//crop
+      var group = new Konva.Group({});
+//red marker margin
+      var rect = new Konva.Rect({
+        x: xCoord + xRectAdj,
+        y: yCoord + xRectAdj,
+        width: 700,
+        height: 700,
+        stroke: 'red',
+        strokeWidth: 3,
+      });
+
+
+/*      var foot = new Image();
+      	foot.onload = function() {
+        var footer = new Konva.Image({
+          x: 0,
+          y: 810,
+          image: foot,
+          width: 810,
+          height: 30
+        });
+        group.add(footer);
+
+    } */
+//map
+      var imageObj = new Image();
+      imageObj.onload = function() {
+        var mapPic = new Konva.Image({
+          x: xCoord,
+          y: yCoord,
+          image: imageObj,
+          width: 800,
+          height: 800
+        });
+        mapPic.crop({
+          x:70, 
+          y:70, 
+          width:1150, 
+          height:1150
+        });
+// add the shape to the layer
+        group.add(mapPic);
+        group.add(rect);
+        layer.add(group);
+        layer.batchDraw();
+      };
+      var head = new Image();
+        head.onload = function() {
+        var header = new Konva.Image({
+          x: 0,
+          y: 0,
+          image: head,
+          width: 810,
+          height: 200
+        });
+        group.add(header);
+        layer.add(group);
+        layer.batchDraw();
+    }
+
+      imageObj.crossOrigin = 'Anonymous';
+      imageObj.src = "https://maps.googleapis.com/maps/api/staticmap?maptype=satellite&center="+lat+","+lng+"&zoom="+adjust+"&size="+mWidth+"x"+mHeight+"&format=png32&scale=4&key={"insert key here"}&libraries=places&callback=initMap";
+// add the layer to the stage
+     stage.add(layer);
+
+//Download Quoted area
+     function downloadURI(uri, name) {
+        var link = document.createElement('a');
+        link.download = name;
+        link.href = uri;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        delete link;
+      }
+      var dataURL;
+      var doc = new jsPDF
+      document.getElementById('save').addEventListener(
+        'click',
+        function() {
+          var dataURL = stage.toDataURL({ pixelRatio: 3 });
+          //downloadURI(dataURL, 'QuotedArea.png');
+          console.log(dataURL);
+          doc.addImage(dataURL,'JPEG',0,0, 210, 210);
+      	  doc.save("holyGrail.pdf");
+        },
+        false
+      );
+      document.getElementById('saveJPEG').addEventListener(
+        'click',
+        function() {
+          var dataURL = stage.toDataURL({ pixelRatio: 3 });
+          console.log(dataURL);
+          downloadURI(dataURL, 'QuotedArea.png');
+        },
+        false
+      );
+
+
+</script>
+
+</head>
